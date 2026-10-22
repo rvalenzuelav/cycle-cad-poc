@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#090d16" />
+  <title>Spinning CAD</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card: #131b2e;
+      --text: #f8fafc;
+      --muted: #64748b;
+      --accent: #38bdf8;
+      --zone-bg: rgba(56, 189, 248, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+      transition: background-color 0.3s ease;
+    }
+
+    /* Barra superior */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    .btn-connect {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .btn-connect:active {
+      transform: scale(0.97);
+    }
+
+    /* Panel central de RPM */
+    .rpm-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin: 16px 0;
+      border-radius: 28px;
+      background: var(--zone-bg);
+      border: 2px solid var(--accent);
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .zone-label {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: -10px;
+    }
+
+    .rpm-value {
+      font-size: clamp(7.5rem, 32vw, 13rem);
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+
+    .rpm-unit {
+      font-size: 1.2rem;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      margin-top: 4px;
+    }
+
+    /* Estadísticas secundarias */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 85%;
+      margin-top: 24px;
+    }
+
+    .stat-box {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 10px;
+      border-radius: 14px;
+      text-align: center;
+    }
+
+    .stat-box span {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .stat-box strong {
+      font-size: 1.35rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Panel inferior del Cronómetro */
+    .timer-card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .timer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preset-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-preset {
+      background: #1e293b;
+      color: var(--muted);
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-preset.active {
+      background: #334155;
+      color: #fff;
+      border-color: #64748b;
+    }
+
+    .timer-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .time-display {
+      font-size: 3.2rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-ctrl {
+      background: #334155;
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .btn-ctrl.primary {
+      background: #10b981;
+      color: #052e16;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra Superior -->
+  <div class="top-bar">
+    <div class="status-pill">
+      <div id="statusDot" class="dot"></div>
+      <span id="statusText">Sin sensor</span>
+    </div>
+    <button id="btnConnect" class="btn-connect">Conectar CAD</button>
+  </div>
+
+  <!-- Visor Gigante de RPM -->
+  <div class="rpm-container" id="rpmCard">
+    <div class="zone-label" id="zoneLabel">ESPERANDO PEDALEO</div>
+    <div class="rpm-value" id="rpmDisplay">0</div>
+    <div class="rpm-unit">RPM</div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <span>Promedio</span>
+        <strong id="avgRpmDisplay">0</strong>
+      </div>
+      <div class="stat-box">
+        <span>Pedaleadas</span>
+        <strong id="totalRevsDisplay">0</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cronómetro Regresivo -->
+  <div class="timer-card">
+    <div class="timer-header">
+      <span style="font-size: 0.8rem; color: var(--muted); font-weight: 600;">
+        AUTO-INICIO AL PEDALEAR (&ge;40 RPM)
+      </span>
+      <div class="preset-group">
+        <button class="btn-preset" id="preset10" onclick="setPreset(10)">10m</button>
+        <button class="btn-preset active" id="preset15" onclick="setPreset(15)">15m</button>
+      </div>
+    </div>
+
+    <div class="timer-main">
+      <div class="time-display" id="timerDisplay">15:00</div>
+      <div class="timer-controls">
+        <button class="btn-ctrl primary" id="btnStartPause" onclick="toggleTimer()">Iniciar</button>
+        <button class="btn-ctrl" onclick="resetSession()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // UUIDs estándar Bluetooth SIG para Cycling Speed and Cadence (CSC)
+    const CSC_SERVICE_UUID = 0x1816;
+    const CSC_MEASUREMENT_CHAR_UUID = 0x2A5B;
+
+    // Variables de estado del sensor
+    let device = null;
+    let prevCrankRevs = null;
+    let prevCrankTime = null;
+    let currentRpm = 0;
+    let lastValidRevTimestamp = 0;
+    let watchdogInterval = null;
+
+    // Estadísticas de la sesión
+    let rpmSamples = [];
+    let sessionRevs = 0;
+
+    // Variables del cronómetro
+    let presetMinutes = 15;
+    let remainingSeconds = 15 * 60;
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    // WakeLock para evitar que la pantalla se apague
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (e) {
+        console.warn('WakeLock no disponible:', e);
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    });
+
+    // Conexión Bluetooth
+    document.getElementById('btnConnect').addEventListener('click', async () => {
+      if (!navigator.bluetooth) {
+        alert('Web Bluetooth no está habilitado. Abre esta página vía HTTPS o localhost en Chrome para Android.');
+        return;
+      }
+
+      try {
+        document.getElementById('statusText').textContent = 'Buscando...';
+        device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [CSC_SERVICE_UUID] }]
+        });
+
+        device.addEventListener('gattserverdisconnected', onDisconnected);
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(CSC_SERVICE_UUID);
+        const characteristic = await service.getCharacteristic(CSC_MEASUREMENT_CHAR_UUID);
+
+        await characteristic.startNotifications();
+        characteristic.addEventListener('characteristicvaluechanged', handleCscMeasurement);
+
+        document.getElementById('statusDot').classList.add('connected');
+        document.getElementById('statusText').textContent = device.name || 'Sensor conectado';
+        document.getElementById('btnConnect').style.display = 'none';
+
+        requestWakeLock();
+        startWatchdog();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('statusText').textContent = 'Sin sensor';
+      }
+    });
+
+    function onDisconnected() {
+      document.getElementById('statusDot').classList.remove('connected');
+      document.getElementById('statusText').textContent = 'Desconectado';
+      document.getElementById('btnConnect').style.display = 'block';
+      document.getElementById('btnConnect').textContent = 'Reconectar';
+      updateRpmUI(0);
+    }
+
+    // Decodificación del paquete GATT 0x2A5B
+    function handleCscMeasurement(event) {
+      const data = event.target.value;
+      const flags = data.getUint8(0);
+
+      const wheelRevPresent = (flags & 0x01) !== 0;
+      const crankRevPresent = (flags & 0x02) !== 0;
+
+      if (!crankRevPresent) return;
+
+      // Si el sensor es dual y envía datos de rueda primero, saltamos 6 bytes
+      let offset = 1;
+      if (wheelRevPresent) {
+        offset += 6;
+      }
+
+      const crankRevs = data.getUint16(offset, true);       // uint16 Little-Endian
+      const crankTime = data.getUint16(offset + 2, true);   // uint16 en 1/1024 seg
+
+      if (prevCrankRevs !== null && prevCrankTime !== null) {
+        // Manejo de desbordamiento (rollover) del entero de 16 bits (65536)
+        const deltaRevs = (crankRevs - prevCrankRevs + 65536) % 65536;
+        const deltaTimeTicks = (crankTime - prevCrankTime + 65536) % 65536;
+
+        if (deltaRevs > 0 && deltaTimeTicks > 0) {
+          const deltaSeconds = deltaTimeTicks / 1024;
+          const instantRpm = (deltaRevs / deltaSeconds) * 60;
+
+          if (instantRpm <= 210) {
+            // Suavizado ligero para evitar saltos bruscos de 1 segundo a otro
+            currentRpm = currentRpm === 0
+              ? Math.round(instantRpm)
+              : Math.round(currentRpm * 0.35 + instantRpm * 0.65);
+
+            lastValidRevTimestamp = Date.now();
+            updateRpmUI(currentRpm);
+
+            // Auto-iniciar el timer al superar 40 RPM si aún no corre y queda tiempo
+            if (!isTimerRunning && remainingSeconds > 0 && currentRpm >= 40) {
+              toggleTimer();
+            }
+
+            // Registrar estadísticas si el cronómetro está corriendo
+            if (isTimerRunning) {
+              sessionRevs += deltaRevs;
+              rpmSamples.push(currentRpm);
+              const avg = Math.round(rpmSamples.reduce((a, b) => a + b, 0) / rpmSamples.length);
+              document.getElementById('avgRpmDisplay').textContent = avg;
+              document.getElementById('totalRevsDisplay').textContent = sessionRevs;
+            }
+          }
+        }
+      }
+
+      prevCrankRevs = crankRevs;
+      prevCrankTime = crankTime;
+    }
+
+    // Si pasan más de 2.8 segundos sin una nueva vuelta de pedal, volver a 0 RPM
+    function startWatchdog() {
+      if (watchdogInterval) clearInterval(watchdogInterval);
+      watchdogInterval = setInterval(() => {
+        if (currentRpm > 0 && Date.now() - lastValidRevTimestamp > 2800) {
+          currentRpm = 0;
+          updateRpmUI(0);
+        }
+      }, 500);
+    }
+
+    // Actualizar colores y textos según la zona metabólica
+    function updateRpmUI(rpm) {
+      document.getElementById('rpmDisplay').textContent = rpm;
+      const root = document.documentElement;
+      const label = document.getElementById('zoneLabel');
+
+      if (rpm === 0) {
+        root.style.setProperty('--accent', '#38bdf8');
+        root.style.setProperty('--zone-bg', 'rgba(56, 189, 248, 0.06)');
+        label.textContent = 'EN PAUSA';
+      } else if (rpm < 75) {
+        root.style.setProperty('--accent', '#38bdf8');
+        root.style.setProperty('--zone-bg', 'rgba(56, 189, 248, 0.12)');
+        label.textContent = 'CADENCIA BAJA (< 75 RPM)';
+      } else if (rpm < 80) {
+        root.style.setProperty('--accent', '#facc15');
+        root.style.setProperty('--zone-bg', 'rgba(250, 204, 21, 0.12)');
+        label.textContent = 'ACERCA DE LA ZONA (75-79 RPM)';
+      } else if (rpm <= 92) {
+        root.style.setProperty('--accent', '#22c55e');
+        root.style.setProperty('--zone-bg', 'rgba(34, 197, 94, 0.18)');
+        label.textContent = 'ZONA ÓPTIMA POST-COMIDA (80-90 RPM)';
+      } else {
+        root.style.setProperty('--accent', '#fb923c');
+        root.style.setProperty('--zone-bg', 'rgba(251, 146, 60, 0.16)');
+        label.textContent = 'RITMO ALTO (> 92 RPM)';
+      }
+    }
+
+    // Funciones del Cronómetro
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function setPreset(minutes) {
+      if (isTimerRunning) toggleTimer();
+      presetMinutes = minutes;
+      remainingSeconds = minutes * 60;
+      document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+      document.getElementById('preset10').classList.toggle('active', minutes === 10);
+      document.getElementById('preset15').classList.toggle('active', minutes === 15);
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('btnStartPause');
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        btn.textContent = 'Reanudar';
+        btn.classList.add('primary');
+      } else {
+        if (remainingSeconds <= 0) remainingSeconds = presetMinutes * 60;
+        isTimerRunning = true;
+        btn.textContent = 'Pausar';
+        btn.classList.remove('primary');
+        requestWakeLock();
+
+        timerInterval = setInterval(() => {
+          remainingSeconds--;
+          document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+
+          if (remainingSeconds <= 0) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            btn.textContent = 'Listo';
+            if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 600]);
+          }
+        }, 1000);
+      }
+    }
+
+    function resetSession() {
+      if (isTimerRunning) toggleTimer();
+      remainingSeconds = presetMinutes * 60;
+      sessionRevs = 0;
+      rpmSamples = [];
+      document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+      document.getElementById('avgRpmDisplay').textContent = '0';
+      document.getElementById('totalRevsDisplay').textContent = '0';
+      document.getElementById('btnStartPause').textContent = 'Iniciar';
+      document.getElementById('btnStartPause').classList.add('primary');
+    }
+  </script>
+</body>
+</html>
