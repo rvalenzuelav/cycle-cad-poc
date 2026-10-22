@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#090d16" />
   <title>Spinning CAD</title>
+  
+  <!-- Ícono vectorial corregido -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%23090d16'/%3E%3Ccircle cx='50' cy='50' r='35' fill='none' stroke='%2338bdf8' stroke-width='8'/%3E%3Cpath d='M50 25v25l18 18' fill='none' stroke='%2322c55e' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='25' fill='%23090d16'/%3E%3Ccircle cx='50' cy='50' r='35' fill='none' stroke='%2338bdf8' stroke-width='8'/%3E%3Cpath d='M50 25v25l18 18' fill='none' stroke='%2322c55e' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
+
   <style>
     :root {
       --bg: #090d16;
@@ -48,4 +53,440 @@
       gap: 8px;
       background: var(--card);
       padding: 8px 14px;
-      border-radius: 99
+      border-radius: 999px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    .dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    .btn-connect {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .btn-connect:active {
+      transform: scale(0.97);
+    }
+
+    .rpm-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin: 16px 0;
+      border-radius: 28px;
+      background: var(--zone-bg);
+      border: 2px solid var(--accent);
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .zone-label {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: -10px;
+    }
+
+    .rpm-value {
+      font-size: clamp(7.5rem, 32vw, 13rem);
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+    }
+
+    .rpm-unit {
+      font-size: 1.2rem;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      margin-top: 4px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 85%;
+      margin-top: 24px;
+    }
+
+    .stat-box {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 10px;
+      border-radius: 14px;
+      text-align: center;
+    }
+
+    .stat-box span {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .stat-box strong {
+      font-size: 1.35rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .timer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preset-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-preset {
+      background: #1e293b;
+      color: var(--muted);
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-preset.active {
+      background: #334155;
+      color: #fff;
+      border-color: #64748b;
+    }
+
+    .timer-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .time-display {
+      font-size: 3.2rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .timer-controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-ctrl {
+      background: #334155;
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .btn-ctrl.primary {
+      background: #10b981;
+      color: #052e16;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div class="status-pill">
+      <div id="statusDot" class="dot"></div>
+      <span id="statusText">No sensor</span>
+    </div>
+    <button id="btnConnect" class="btn-connect">Connect CAD</button>
+  </div>
+
+  <div class="rpm-container" id="rpmCard">
+    <div class="zone-label" id="zoneLabel">WAITING FOR PEDALING</div>
+    <div class="rpm-value" id="rpmDisplay">0</div>
+    <div class="rpm-unit">RPM</div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <span>Average</span>
+        <strong id="avgRpmDisplay">0</strong>
+      </div>
+      <div class="stat-box">
+        <span>Revolutions</span>
+        <strong id="totalRevsDisplay">0</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="timer-card">
+    <div class="timer-header">
+      <span style="font-size: 0.8rem; color: var(--muted); font-weight: 600;">
+        AUTO-START ON PEDALING (&ge;40 RPM)
+      </span>
+      <div class="preset-group">
+        <button class="btn-preset" id="preset10" onclick="setPreset(10)">10m</button>
+        <button class="btn-preset active" id="preset15" onclick="setPreset(15)">15m</button>
+      </div>
+    </div>
+
+    <div class="timer-main">
+      <div class="time-display" id="timerDisplay">15:00</div>
+      <div class="timer-controls">
+        <button class="btn-ctrl primary" id="btnStartPause" onclick="toggleTimer()">Start</button>
+        <button class="btn-ctrl" onclick="resetSession()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CSC_SERVICE_UUID = 0x1816;
+    const CSC_MEASUREMENT_CHAR_UUID = 0x2A5B;
+
+    let device = null;
+    let prevCrankRevs = null;
+    let prevCrankTime = null;
+    let currentRpm = 0;
+    let lastValidRevTimestamp = 0;
+    let watchdogInterval = null;
+
+    let rpmSamples = [];
+    let sessionRevs = 0;
+
+    let presetMinutes = 15;
+    let remainingSeconds = 15 * 60;
+    let timerInterval = null;
+    let isTimerRunning = false;
+
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (e) {
+        console.warn('WakeLock not available:', e);
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    });
+
+    document.getElementById('btnConnect').addEventListener('click', async () => {
+      if (!navigator.bluetooth) {
+        alert('Web Bluetooth is not enabled. Please open this page via HTTPS or localhost in Chrome for Android.');
+        return;
+      }
+
+      try {
+        document.getElementById('statusText').textContent = 'Searching...';
+        device = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [CSC_SERVICE_UUID] }]
+        });
+
+        device.addEventListener('gattserverdisconnected', onDisconnected);
+        const server = await device.gatt.connect();
+        const service = await server.getPrimaryService(CSC_SERVICE_UUID);
+        const characteristic = await service.getCharacteristic(CSC_MEASUREMENT_CHAR_UUID);
+
+        await characteristic.startNotifications();
+        characteristic.addEventListener('characteristicvaluechanged', handleCscMeasurement);
+
+        document.getElementById('statusDot').classList.add('connected');
+        document.getElementById('statusText').textContent = device.name || 'Sensor connected';
+        document.getElementById('btnConnect').style.display = 'none';
+
+        requestWakeLock();
+        startWatchdog();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('statusText').textContent = 'No sensor';
+      }
+    });
+
+    function onDisconnected() {
+      document.getElementById('statusDot').classList.remove('connected');
+      document.getElementById('statusText').textContent = 'Disconnected';
+      document.getElementById('btnConnect').style.display = 'block';
+      document.getElementById('btnConnect').textContent = 'Reconnect';
+      updateRpmUI(0);
+    }
+
+    function handleCscMeasurement(event) {
+      const data = event.target.value;
+      const flags = data.getUint8(0);
+
+      const wheelRevPresent = (flags & 0x01) !== 0;
+      const crankRevPresent = (flags & 0x02) !== 0;
+
+      if (!crankRevPresent) return;
+
+      let offset = 1;
+      if (wheelRevPresent) {
+        offset += 6;
+      }
+
+      const crankRevs = data.getUint16(offset, true);
+      const crankTime = data.getUint16(offset + 2, true);
+
+      if (prevCrankRevs !== null && prevCrankTime !== null) {
+        const deltaRevs = (crankRevs - prevCrankRevs + 65536) % 65536;
+        const deltaTimeTicks = (crankTime - prevCrankTime + 65536) % 65536;
+
+        if (deltaRevs > 0 && deltaTimeTicks > 0) {
+          const deltaSeconds = deltaTimeTicks / 1024;
+          const instantRpm = (deltaRevs / deltaSeconds) * 60;
+
+          if (instantRpm <= 210) {
+            currentRpm = currentRpm === 0
+              ? Math.round(instantRpm)
+              : Math.round(currentRpm * 0.35 + instantRpm * 0.65);
+
+            lastValidRevTimestamp = Date.now();
+            updateRpmUI(currentRpm);
+
+            if (!isTimerRunning && remainingSeconds > 0 && currentRpm >= 40) {
+              toggleTimer();
+            }
+
+            if (isTimerRunning) {
+              sessionRevs += deltaRevs;
+              rpmSamples.push(currentRpm);
+              const avg = Math.round(rpmSamples.reduce((a, b) => a + b, 0) / rpmSamples.length);
+              document.getElementById('avgRpmDisplay').textContent = avg;
+              document.getElementById('totalRevsDisplay').textContent = sessionRevs;
+            }
+          }
+        }
+      }
+
+      prevCrankRevs = crankRevs;
+      prevCrankTime = crankTime;
+    }
+
+    function startWatchdog() {
+      if (watchdogInterval) clearInterval(watchdogInterval);
+      watchdogInterval = setInterval(() => {
+        if (currentRpm > 0 && Date.now() - lastValidRevTimestamp > 2800) {
+          currentRpm = 0;
+          updateRpmUI(0);
+        }
+      }, 500);
+    }
+
+    function updateRpmUI(rpm) {
+      document.getElementById('rpmDisplay').textContent = rpm;
+      const root = document.documentElement;
+      const label = document.getElementById('zoneLabel');
+
+      if (rpm === 0) {
+        root.style.setProperty('--accent', '#38bdf8');
+        root.style.setProperty('--zone-bg', 'rgba(56, 189, 248, 0.06)');
+        label.textContent = 'PAUSED';
+      } else if (rpm < 75) {
+        root.style.setProperty('--accent', '#38bdf8');
+        root.style.setProperty('--zone-bg', 'rgba(56, 189, 248, 0.12)');
+        label.textContent = 'LOW CADENCE (< 75 RPM)';
+      } else if (rpm < 80) {
+        root.style.setProperty('--accent', '#facc15');
+        root.style.setProperty('--zone-bg', 'rgba(250, 204, 21, 0.12)');
+        label.textContent = 'NEAR ZONE (75-79 RPM)';
+      } else if (rpm <= 92) {
+        root.style.setProperty('--accent', '#22c55e');
+        root.style.setProperty('--zone-bg', 'rgba(34, 197, 94, 0.18)');
+        label.textContent = 'OPTIMAL POST-MEAL ZONE (80-90 RPM)';
+      } else {
+        root.style.setProperty('--accent', '#fb923c');
+        root.style.setProperty('--zone-bg', 'rgba(251, 146, 60, 0.16)');
+        label.textContent = 'HIGH PACE (> 92 RPM)';
+      }
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, '0');
+      const s = (sec % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function setPreset(minutes) {
+      if (isTimerRunning) toggleTimer();
+      presetMinutes = minutes;
+      remainingSeconds = minutes * 60;
+      document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+      document.getElementById('preset10').classList.toggle('active', minutes === 10);
+      document.getElementById('preset15').classList.toggle('active', minutes === 15);
+    }
+
+    function toggleTimer() {
+      const btn = document.getElementById('btnStartPause');
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        btn.textContent = 'Resume';
+        btn.classList.add('primary');
+      } else {
+        if (remainingSeconds <= 0) remainingSeconds = presetMinutes * 60;
+        isTimerRunning = true;
+        btn.textContent = 'Pause';
+        btn.classList.remove('primary');
+        requestWakeLock();
+
+        timerInterval = setInterval(() => {
+          remainingSeconds--;
+          document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+
+          if (remainingSeconds <= 0) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            btn.textContent = 'Done';
+            if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 600]);
+          }
+        }, 1000);
+      }
+    }
+
+    function resetSession() {
+      if (isTimerRunning) toggleTimer();
+      remainingSeconds = presetMinutes * 60;
+      sessionRevs = 0;
+      rpmSamples = [];
+      document.getElementById('timerDisplay').textContent = formatTime(remainingSeconds);
+      document.getElementById('avgRpmDisplay').textContent = '0';
+      document.getElementById('totalRevsDisplay').textContent = '0';
+      document.getElementById('btnStartPause').textContent = 'Start';
+      document.getElementById('btnStartPause').classList.add('primary');
+    }
+  </script>
+</body>
+</html>
